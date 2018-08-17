@@ -5,17 +5,22 @@
         private $errorArray;
 
         public function __construct($con) {
+            //create a empty array for error messages
             $this->errorArray = array();
+
             $this->con = $con;    
         }
 
         public function register($username, $firstName, $lastName, $email, $email2, $password, $password2) {
+
+            // do the validation for user's input
             $this->validateUsername($username);
             $this->validateFirstName($firstName);
             $this->validateLastName($lastName);
             $this->validateEmails($email, $email2);
             $this->validatePasswords($password, $password2);
 
+            // if no errors, insert user info into database
             if(empty($this->errorArray)) {
                 return $this->insertUserDetails($username, $firstName, $lastName, $email, $password);
             } else {
@@ -24,7 +29,9 @@
         }
 
         public function login($loginUsername, $loginPassword) {
+            // encrypt password to match the password in the db
             $loginPassword = md5($loginPassword);
+            // check if the user info can be found in the db
             $query = mysqli_query($this->con, "SELECT * FROM users WHERE username='$loginUsername' AND password='$loginPassword'");
             if(mysqli_num_rows($query) == 1) {
                 return true;
