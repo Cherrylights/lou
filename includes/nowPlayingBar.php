@@ -1,10 +1,11 @@
 <?php
+    //randomly grab 10 songs' id from database
     $songQuery = mysqli_query($con,"SELECT id FROM songs ORDER BY RAND() LIMIT 10");
     $resultArray = array();
     while($row = mysqli_fetch_array($songQuery)) {
         array_push($resultArray, $row['id']);
     }
-
+    //return ids in form of JSON
     $jsonArray = json_encode($resultArray);
 
 ?>
@@ -12,28 +13,55 @@
 <script>
 
     $(document).ready(function() {
+        //Get JSON data of song ids
         currentPlaylist = <?php echo $jsonArray ?>;
+        //Create a new audio element
         audioElement = new Audio();
+        //console.log(typeof(currentPlaylist[0]));
+
+        //Set the track with id
         setTrack(currentPlaylist[0], currentPlaylist, false);
     });
 
     function setTrack(trackId, newPlaylist, play) {
-       
-        $.post('includes/handlers/ajax/getSongJson.php', { songId: trackId}, function(data) {
+        // Query song's data in database
+        // Then fill in the song name, artist name and the artwork
+        // Then set the music file path
+        // Finally play the song
+        $.post('includes/handlers/ajax/getSongJson.php', { songId: trackId }, function(data) {
             var songData = JSON.parse(data);
             console.log(songData);
-            audioElement.setTrack(songData.path);
-        })
-        if(play) {
-            audioElement.play();
-        } else {
+            
+            $(".trackName span").text(songData.title);
 
-        }
+            //Query the artist name using song's artist id
+            var artistId = songData.artist;
+            $.post('includes/handlers/ajax/getArtistJson.php', { artistId : artistId }, function(data) {
+                var artistData = JSON.parse(data);
+                //console.log(artistData);
+                $(".artistName span").text(artistData.name);
+            });
+
+            //Query the album artwork using song's album id
+            var albumId = songData.album;
+            $.post('includes/handlers/ajax/getAlbumJson.php', { albumId : albumId}, function(data) {
+                var albumData = JSON.parse(data);
+                //console.log(albumData);
+                $(".albumLink img").attr('src', albumData.artworkPath);
+            })
+            
+            audioElement.setTrack(songData);
+            playSong();
+        });
+
     }
 
     function playSong() {
         $('.controlButton.play').hide();
         $('.controlButton.pause').show();
+        if(audioElement.audio.currentTime == 0) {
+            $.post('includes/handlers/ajax/updatePlays.php', { songId : audioElement.currentlyPlaying.id });
+        }
         audioElement.play();
 
     }
@@ -58,11 +86,11 @@
                 <div class="trackInfo">
 
                     <span class="trackName">
-                        <span>Happy Birthday</span>
+                        <span></span>
                     </span>
 
                     <span class="artistName">
-                        <span>Reece Kenney</span>
+                        <span></span>
                     </span>
 
                 </div>
